@@ -178,8 +178,13 @@ while IFS= read -r -d '' file; do
 
     filename=$(basename "$file")
 
-    # Try to extract DateTimeOriginal from EXIF data
-    exif_date=$(exiftool -DateTimeOriginal -b "$file" 2>/dev/null || echo "")
+    # Try to extract CreateDate first, then DateTimeOriginal from EXIF data
+    exif_date=$(exiftool -CreateDate -b "$file" 2>/dev/null || echo "")
+
+    # If CreateDate not found, try DateTimeOriginal
+    if [ -z "$exif_date" ]; then
+        exif_date=$(exiftool -DateTimeOriginal -b "$file" 2>/dev/null || echo "")
+    fi
 
     # Determine the year/month directory
     if [ -n "$exif_date" ]; then
