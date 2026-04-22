@@ -1,4 +1,34 @@
 #!/bin/bash
+#
+# Media Organizer Script
+# =====================
+# Purpose: Organize images and videos by date into YYYY/MM directory structure
+#
+# This script:
+#   - Extracts creation date from EXIF metadata (with file modification time fallback)
+#   - Copies files from a source directory to organized output directories (YYYY/MM)
+#   - Detects and handles duplicate files using MD5 checksums
+#   - Creates a "DUPLICATES" directory for files with duplicate content
+#   - Creates an "UNDATED" directory for files without date information
+#   - Generates a summary report of processed files
+#
+# Dependencies: exiftool (Image::ExifTool perl package)
+#
+# Usage: ./organize.sh
+#   - Prompts for source directory (where media files are located)
+#   - Prompts for output directory (where organized YYYY/MM folders will be created)
+#
+# ⚠️  ATTENTION: IRREVERSIBLE CHANGES WILL BE MADE
+#   - Source files will be MOVED (not copied) to output directory
+#   - Original file locations will be emptied
+#   - Ensure you have backups if needed before running
+#
+# TLDR - Before you run:
+#   1. Source directory: where your unsorted media files currently live
+#   2. Output directory: where YYYY/MM folders will be created (must exist)
+#   3. Files WILL BE MOVED (not copied) - original location will be emptied
+#   4. Duplicates go to output/DUPLICATES, files without dates go to output/UNDATED
+#   5. Requires exiftool to be installed
 
 set -uo pipefail
 
