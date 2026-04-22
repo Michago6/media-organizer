@@ -19,14 +19,14 @@
 #   - Prompts for output directory (where organized YYYY/MM folders will be created)
 #
 # ⚠️  ATTENTION: IRREVERSIBLE CHANGES WILL BE MADE
-#   - Source files will be MOVED (not copied) to output directory
+#   - Source files will be MOVED to output directory
 #   - Original file locations will be emptied
 #   - Ensure you have backups if needed before running
 #
 # TLDR - Before you run:
 #   1. Source directory: where your unsorted media files currently live
 #   2. Output directory: where YYYY/MM folders will be created (must exist)
-#   3. Files WILL BE MOVED (not copied) - original location will be emptied
+#   3. Files WILL BE MOVED - original location will be emptied
 #   4. Duplicates go to output/DUPLICATES, files without dates go to output/UNDATED
 #   5. Requires exiftool to be installed
 
@@ -208,7 +208,7 @@ while IFS= read -r -d '' file; do
         ((duplicate_files++))
         record_checksum "$checksum" "$DUPLICATES_DIR/$filename"
     else
-        # Not a duplicate, copy to organized directory
+        # Not a duplicate, move to organized directory
         mkdir -p "$target_dir"
         mv "$file" "$target_dir/$filename"
         log_info "Moved: $filename → $date_path/"

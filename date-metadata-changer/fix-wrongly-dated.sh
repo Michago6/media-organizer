@@ -137,35 +137,51 @@ while IFS= read -r -d '' yyyy_mm_dir; do
             exif_date=$(exiftool -CreateDate -b "$file" 2>/dev/null || echo "")
         fi
 
-        # If no EXIF date, move to WRONGLY-DATED
-        if [ -z "$exif_date" ]; then
+        # If no EXIF date, try File Modification Date as fallback
+        source_date="$exif_date"
+        date_source="EXIF"
+
+        if [ -z "$source_date" ]; then
+            source_date=$(exiftool -FileModifyDate -b "$file" 2>/dev/null || echo "")
+            date_source="FileModifyDate"
+        fi
+
+        # If still no date found, copy to WRONGLY-DATED
+        if [ -z "$source_date" ]; then
             mkdir -p "$wrongly_dated_dir"
             cp -p "$file" "$wrongly_dated_dir/$filename"
-            log_warning "No EXIF data found: $filename → $yyyy/$mm/WRONGLY-DATED/"
+
+            # Update metadata to folder's month/year, 1st day
+            new_date="$yyyy:$mm:01 00:00:00"
+            exiftool -overwrite_original -DateTimeOriginal="$new_date" -CreateDate="$new_date" -FileModifyDate="$new_date" "$wrongly_dated_dir/$filename" > /dev/null 2>&1
+            touch -t "${yyyy}${mm}010000" "$wrongly_dated_dir/$filename"
+
+            log_warning "No date metadata found: $filename → $yyyy/$mm/WRONGLY-DATED/ [metadata set to $yyyy-$mm-01]"
             ((no_exif_files++))
             continue
         fi
 
-        # Parse EXIF date (format: YYYY:MM:DD HH:MM:SS)
-        if [[ $exif_date =~ ^([0-9]{4}):([0-9]{2}): ]]; then
-            exif_yyyy="${BASH_REMATCH[1]}"
-            exif_mm="${BASH_REMATCH[2]}"
+        # Parse date (format: YYYY:MM:DD HH:MM:SS)
+        if [[ $source_date =~ ^([0-9]{4}):([0-9]{2}): ]]; then
+            source_yyyy="${BASH_REMATCH[1]}"
+            source_mm="${BASH_REMATCH[2]}"
         else
-            log_warning "Could not parse EXIF date for: $filename"
+            log_warning "Could not parse date for: $filename"
             continue
         fi
 
-        # Check if EXIF date matches folder location
-        if [ "$exif_yyyy" != "$yyyy" ] || [ "$exif_mm" != "$mm" ]; then
+        # Check if date matches folder location
+        if [ "$source_yyyy" != "$yyyy" ] || [ "$source_mm" != "$mm" ]; then
             # Date mismatch - copy to WRONGLY-DATED and update metadata
             mkdir -p "$wrongly_dated_dir"
             cp -p "$file" "$wrongly_dated_dir/$filename"
 
-            # Update EXIF metadata to 1st of the month of the folder
+            # Update all metadata to 1st of the month of the folder
             new_date="$yyyy:$mm:01 00:00:00"
-            exiftool -overwrite_original -DateTimeOriginal="$new_date" -CreateDate="$new_date" "$wrongly_dated_dir/$filename" > /dev/null 2>&1
+            exiftool -overwrite_original -DateTimeOriginal="$new_date" -CreateDate="$new_date" -FileModifyDate="$new_date" "$wrongly_dated_dir/$filename" > /dev/null 2>&1
+            touch -t "${yyyy}${mm}010000" "$wrongly_dated_dir/$filename"
 
-            log_warning "Wrongly dated (EXIF: $exif_yyyy-$exif_mm, Folder: $yyyy-$mm): $filename → $yyyy/$mm/WRONGLY-DATED/ [metadata updated]"
+            log_warning "Wrongly dated ($date_source: $source_yyyy-$source_mm, Folder: $yyyy-$mm): $filename → $yyyy/$mm/WRONGLY-DATED/ [metadata updated to $yyyy-$mm-01]"
             ((wrongly_dated_files++))
         else
             # Date matches folder location
